@@ -1,0 +1,18 @@
+# Private runtime state and historical copies stay on disk, outside publication.
+/.gradle/
+/build/
+/run/
+/logs/
+/releases/
+/config/
+/screenshots/
+/backups/
+/mod-archive/
+/.env*
+*.log
+*.bak
+*.pending
+*.keystore
+*.jks
+*.p12
+*.hprof

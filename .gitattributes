@@ -1,0 +1,18 @@
+# Do not include personal runtime state or unverified historical binaries in source exports.
+.gradle export-ignore
+build export-ignore
+run export-ignore
+logs export-ignore
+releases export-ignore
+config export-ignore
+screenshots export-ignore
+backups export-ignore
+mod-archive export-ignore
+.env* export-ignore
+*.log export-ignore
+*.bak export-ignore
+*.pending export-ignore
+*.keystore export-ignore
+*.jks export-ignore
+*.p12 export-ignore
+*.hprof export-ignore

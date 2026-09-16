@@ -1,0 +1,18 @@
+{
+  "required": true,
+  "package": "fr.tropimon.chatfilter.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "ChatHudAccessor",
+    "ChatHudMixin",
+    "ChatScreenAccessor",
+    "ChatScreenMixin",
+    "ClientPlayNetworkHandlerMixin",
+    "DecoderHandlerMixin",
+    "MinecraftClientMixin",
+    "MouseMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

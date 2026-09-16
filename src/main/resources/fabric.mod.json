@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "tropimon_chat_filter",
+  "version": "${version}",
+  "name": "Tropimon Chat Filter",
+  "description": "Organise les chats global, ville, staff, groupe et privés de Tropimon.",
+  "authors": ["By FastedCorsi"],
+  "license": "All-Rights-Reserved",
+  "environment": "client",
+  "entrypoints": {
+    "client": ["fr.tropimon.chatfilter.TropimonChatFilterClient"]
+  },
+  "mixins": ["tropimon_chat_filter.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.16.0",
+    "minecraft": "1.21.1",
+    "fabric-api": "*",
+    "java": ">=21"
+  }
+}

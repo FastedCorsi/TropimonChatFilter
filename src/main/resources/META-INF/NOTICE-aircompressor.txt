@@ -1,0 +1,5 @@
+Aircompressor 0.27 (Airlift contributors)
+https://github.com/airlift/aircompressor/tree/0.27
+Licensed under Apache License 2.0; see LICENSE-aircompressor.txt.
+The distributed bytecode is relocated into fr.tropimon.chatfilter.internal.airlift.compress
+and reduced to the classes reachable by our Zstandard decoder. No external mod provides it.

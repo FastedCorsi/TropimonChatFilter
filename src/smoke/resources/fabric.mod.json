@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "id": "chat_filter_smoke",
+  "version": "1.0.0",
+  "authors": ["By FastedCorsi"],
+  "environment": "client",
+  "entrypoints": {"client": ["fr.tropimon.chatfilter.ChatFilterSmoke"]},
+  "depends": {"tropimon_chat_filter": "*"}
+}
