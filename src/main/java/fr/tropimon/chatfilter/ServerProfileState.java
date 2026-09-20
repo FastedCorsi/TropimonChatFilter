@@ -13,8 +13,7 @@ final class ServerProfileState {
     static final int MAX_CITIZENS = 65536;
     private Object session;
     private long revision;
-    private String region;
-    private String townsRegion;
+    private boolean clearTownsOnNextBatch;
     private Map<UUID, Town> towns = Map.of();
     private Map<UUID, String> playerTowns = Map.of();
     private Map<String, UUID> playerIds = Map.of();
@@ -36,7 +35,7 @@ final class ServerProfileState {
     record Profile(UUID player, boolean staff, Membership town) implements Update {
         Profile(UUID player, boolean staff) { this(player, staff, Membership.UNKNOWN); }
     }
-    record Region(String name) implements Update { }
+    record Region() implements Update { }
     record TownLookup(boolean known, String name, boolean fromProfile) { }
 
     long revision() { return revision; }
@@ -48,15 +47,15 @@ final class ServerProfileState {
         towns = Map.of();
         playerTowns = Map.of();
         playerIds = Map.of();
-        region = townsRegion = null;
+        clearTownsOnNextBatch = false;
         profilePlayer = null;
         profileStaff = false;
         profileTown = Membership.UNKNOWN;
     }
 
     void apply(Update update) {
-        if (update instanceof Region value) {
-            region = value.name();
+        if (update instanceof Region) {
+            clearTownsOnNextBatch = true;
         } else if (update instanceof Profile value) {
             if (!value.player().equals(profilePlayer)) profileTown = Membership.UNKNOWN;
             profilePlayer = value.player();
@@ -64,14 +63,12 @@ final class ServerProfileState {
             if (value.town().known()) profileTown = value.town();
         } else {
             Map<UUID, Town> next = new HashMap<>(towns);
-            String nextRegion = townsRegion;
             if (update instanceof Towns value) {
                 // Town batches are incremental within a region, not full replacements.
-                if (value.batch() && (townsRegion == null ? region != null
-                        : region == null || !townsRegion.equalsIgnoreCase(region))) {
+                if (value.batch() && clearTownsOnNextBatch) {
                     next.clear();
                 }
-                if (value.batch()) nextRegion = region;
+                if (value.batch()) clearTownsOnNextBatch = false;
                 for (Town town : value.towns()) next.put(town.id(), town);
             } else if (update instanceof Delete value) {
                 next.remove(value.id());
@@ -90,7 +87,6 @@ final class ServerProfileState {
             }
             // Publish only a complete, validated update.
             towns = Map.copyOf(next);
-            townsRegion = nextRegion;
             playerTowns = Map.copyOf(townIndex);
             playerIds = Map.copyOf(nameIndex);
         }

@@ -76,7 +76,9 @@ final class ServerProfileWire {
             }
             case "tropimon:update_town_packet" -> new ServerProfileState.Towns(List.of(town(input)), false);
             case "tropimon:delete_town_packet" -> new ServerProfileState.Delete(uuid(input));
-            case "tropimon:set_current_server_packet" -> new ServerProfileState.Region(json(input).get("name").getAsString());
+            // The server owns this payload's private format. Its receipt alone is the
+            // stable signal Chat Filter needs to delimit regional town batches.
+            case "tropimon:set_current_server_packet" -> new ServerProfileState.Region();
             case "tropimon:update_player_data_packet" -> {
                 ByteBuf raw = decompress(input);
                 try {

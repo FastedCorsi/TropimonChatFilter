@@ -58,7 +58,7 @@ class ServerProfileWireTest {
         Object connection = new Object();
         state.session(connection);
         assertFalse(state.available());
-        state.apply(new ServerProfileState.Region("spawn"));
+        state.apply(new ServerProfileState.Region());
         state.apply(new ServerProfileState.Towns(List.of(new ServerProfileState.Town(TOWN, "Polaris", Map.of(PLAYER, "Alex"))), true));
         state.apply(new ServerProfileState.Profile(PLAYER, true));
         assertEquals("Polaris", state.town(PLAYER));
@@ -82,12 +82,12 @@ class ServerProfileWireTest {
     @Test void regionChangesAndDeletionsDoNotLeaveStaleMembership() {
         var state = new ServerProfileState();
         state.session(new Object());
-        state.apply(new ServerProfileState.Region("spawn"));
+        state.apply(new ServerProfileState.Region());
         state.apply(new ServerProfileState.Towns(List.of(new ServerProfileState.Town(TOWN, "Polaris", Map.of(PLAYER, "Alex"))), true));
         state.apply(new ServerProfileState.Delete(TOWN));
         assertFalse(state.available());
         state.apply(new ServerProfileState.Towns(List.of(new ServerProfileState.Town(TOWN, "Polaris", Map.of(PLAYER, "Alex"))), true));
-        state.apply(new ServerProfileState.Region("other"));
+        state.apply(new ServerProfileState.Region());
         state.apply(new ServerProfileState.Towns(List.of(), true));
         assertFalse(state.available());
         assertTrue(state.playerId("Alex").isEmpty());
@@ -122,7 +122,7 @@ class ServerProfileWireTest {
             state.apply(ServerProfileWire.decode("tropimon:update_player_data_packet", payload));
             assertTrue(state.lookup(PLAYER).known());
             assertEquals("Polaris", state.lookup(PLAYER).name());
-            state.apply(new ServerProfileState.Region("another-region"));
+            state.apply(new ServerProfileState.Region());
             state.apply(new ServerProfileState.Towns(List.of(), true));
             assertEquals("Polaris", state.lookup(PLAYER).name());
             state.apply(new ServerProfileState.Profile(PLAYER, true)); // incomplete profile refresh
@@ -158,6 +158,52 @@ class ServerProfileWireTest {
         state.apply(new ServerProfileState.Towns(List.of(new ServerProfileState.Town(TOWN, "Polaris", Map.of(PLAYER, "Alex"))), true));
         state.apply(new ServerProfileState.Towns(List.of(new ServerProfileState.Town(UUID.randomUUID(), "Other", Map.of())), true));
         assertEquals("Polaris", state.lookup(PLAYER).name());
+    }
+
+    @Test void opaqueRegionMarkerPreservesPayloadAndPurgesOnlyTheNextRegionalBatch() {
+        ByteBuf payload = Unpooled.copiedBuffer("opaque server payload", StandardCharsets.UTF_8);
+        try {
+            int reader = payload.readerIndex(), writer = payload.writerIndex(), refs = payload.refCnt();
+            var marker = ServerProfileWire.decode("tropimon:set_current_server_packet", payload);
+            assertInstanceOf(ServerProfileState.Region.class, marker);
+            assertEquals(reader, payload.readerIndex());
+            assertEquals(writer, payload.writerIndex());
+            assertEquals(refs, payload.refCnt());
+
+            UUID previousPlayer = UUID.fromString("87654321-4321-4321-4321-cba987654321");
+            var state = new ServerProfileState();
+            state.session(new Object());
+            state.apply(new ServerProfileState.Towns(List.of(new ServerProfileState.Town(
+                    TOWN, "Old region", Map.of(previousPlayer, "Alex"))), true));
+            state.apply(new ServerProfileState.Profile(PLAYER, false,
+                    new ServerProfileState.Membership(true, TOWN, "Polaris")));
+
+            state.apply(marker);
+            assertEquals(previousPlayer, state.playerId("Alex").orElseThrow(),
+                    "the current regional view remains usable until its replacement batch arrives");
+            state.apply(new ServerProfileState.Towns(List.of(), true));
+
+            assertTrue(state.playerId("Alex").isEmpty());
+            assertEquals(new ServerProfileState.TownLookup(true, "Polaris", true), state.lookup(PLAYER),
+                    "regional invalidation must not erase the authoritative player profile");
+        } finally { payload.release(); }
+    }
+
+    @Test void frameObservationAcceptsOpaqueRegionPayloadWithoutTouchingTheFrame() {
+        ByteBuf frame = Unpooled.buffer();
+        putVarInt(frame, 25);
+        putString(frame, "tropimon:set_current_server_packet");
+        frame.writeBytes(new byte[] {0, 1, 2, 3, (byte) 0xFF});
+        try {
+            int reader = frame.readerIndex(), writer = frame.writerIndex(), refs = frame.refCnt();
+            var observed = ServerProfileWire.inspectFrame(frame);
+            assertNotNull(observed);
+            assertNull(observed.error());
+            assertInstanceOf(ServerProfileState.Region.class, observed.update());
+            assertEquals(reader, frame.readerIndex());
+            assertEquals(writer, frame.writerIndex());
+            assertEquals(refs, frame.refCnt());
+        } finally { frame.release(); }
     }
 
     @Test void profileRemainsAuthoritativeThroughTownListUpdatesAndLeavingTown() {
