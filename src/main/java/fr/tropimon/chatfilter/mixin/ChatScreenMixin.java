@@ -60,7 +60,7 @@ abstract class ChatScreenMixin extends Screen {
     private static final int BUTTON_GAP = 1;
     private static final int PRIVATE_CLOSE_WIDTH = 15;
     private static final int FILTER_BUTTON_WIDTH = 16;
-    private static final int FILTER_OPTION_WIDTH = 78;
+    private static final int FILTER_OPTION_WIDTH = 86;
     private static final int FILTER_OPTION_HEIGHT = 15;
     private static final int FILTER_SETTINGS_COUNT = 5;
     private static final int FILTER_ROWS = 9;

@@ -22,10 +22,15 @@ import net.minecraft.world.level.LevelInfo;
 public final class ChatFilterSmoke implements ClientModInitializer {
     private int tick;
     private int stage = -1;
+    private final ChatGuiSmoke gui = new ChatGuiSmoke();
+    private long started;
     @Override public void onInitializeClient() {
         if (!Boolean.getBoolean("chatfilter.smoke")) return;
+        started = System.nanoTime();
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
             try {
+                if (stage == 2) return;
+                if (System.nanoTime() - started > 240_000_000_000L) throw new AssertionError("Offline smoke timeout");
                 if (client.getOverlay() != null || ++tick < 60) return;
                 if (stage == -1) {
                     stage = 0;
@@ -47,6 +52,7 @@ public final class ChatFilterSmoke implements ClientModInitializer {
                     stage = 1;
                     tick = 0;
                 } else if (stage == 1) {
+                    if (Boolean.getBoolean("chatfilter.smoke.gui") && !gui.advance(client)) return;
                     // The real ChatScreen/HUD have rendered repeatedly with the new layout cache.
                     client.setScreen(null);
                     System.out.println("CHAT_FILTER_SMOKE_OK: offline world, mixins, classification, visibility, clickable text, chat screen rendered");
