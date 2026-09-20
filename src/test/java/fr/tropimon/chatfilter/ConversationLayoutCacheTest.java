@@ -7,6 +7,22 @@ import java.util.function.ToIntFunction;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ConversationLayoutCacheTest {
+    @Test void longConversationRemainsReachableInTheSpaceReservedOnSmallGuiViewports() {
+        var cache = new ConversationLayoutCache();
+        var tabs = List.of(new PrivateChatManager.ConversationTab("LongExampleName", 7, false));
+        Object session = new Object(), font = new Object();
+        for (int available : new int[] {58, 60, 63, 64, 90, 106, 300}) {
+            var buttons = cache.get(tabs, 3, available + 4, 0, session, font,
+                    name -> name.length() * 6, (name, width) -> name.substring(0, Math.min(name.length(), width / 6)));
+            assertEquals(1, buttons.size(), "Reserved width: " + available);
+            var button = buttons.getFirst();
+            assertTrue(button.x() >= 3);
+            assertTrue(button.x() + button.width() <= available + 3);
+            assertTrue(button.width() >= 58);
+            assertEquals(7, button.tab().unread());
+        }
+    }
+
     @Test void idleFramesDoNotRebuildOrRemeasureButChangesInvalidate() {
         var cache = new ConversationLayoutCache();
         var measurements = new AtomicInteger();

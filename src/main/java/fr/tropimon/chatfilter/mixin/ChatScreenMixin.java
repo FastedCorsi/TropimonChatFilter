@@ -95,6 +95,7 @@ abstract class ChatScreenMixin extends Screen {
     @Unique private String tropimonChatFilter$measuredTown;
     @Unique private Object tropimonChatFilter$fontEpoch;
     @Unique private int tropimonChatFilter$townWidth = TOWN_MIN_WIDTH;
+    @Unique private int tropimonChatFilter$townWidthLimit;
     @Unique private Text tropimonChatFilter$townLabel;
     @Unique private final Text tropimonChatFilter$noTownLabel = Text.translatable("tropimon_chat_filter.tab.no_town");
     @Unique private final Text tropimonChatFilter$unknownTownLabel = Text.translatable("tropimon_chat_filter.tab.town_unknown");
@@ -571,6 +572,10 @@ abstract class ChatScreenMixin extends Screen {
         }
         context.drawCenteredTextWithShadow(
                 textRenderer, label, labelCenter, y + 4, text);
+        if (hovered && channel == ChatChannel.TOWN && tropimonChatFilter$measuredTown != null
+                && !label.getString().equals(tropimonChatFilter$measuredTown)) {
+            setTooltip(Text.literal(tropimonChatFilter$measuredTown));
+        }
         if (unread > 0) {
             drawUnreadBadge(context, unread, x + buttonWidth - 2, y);
         }
@@ -604,6 +609,9 @@ abstract class ChatScreenMixin extends Screen {
         int labelCenter = (button.x() + closeX) / 2;
         context.drawCenteredTextWithShadow(textRenderer, label, labelCenter, tabY() + 4,
                 attention ? 0xFFFFD5E7 : active ? 0xFFCBF6FF : 0xFFD0D7DB);
+        if (hovered && !closeHovered && !label.equals(button.tab().name())) {
+            setTooltip(Text.literal(button.tab().name()));
+        }
         if (button.tab().unread() > 0) {
             drawUnreadBadge(context, button.tab().unread(), closeX + 2, tabY());
         }
@@ -1132,11 +1140,16 @@ abstract class ChatScreenMixin extends Screen {
         tropimonChatFilter$chatRight = calculateChatRight();
         String town = TownChatNotifications.townName();
         Object fontEpoch = RenderCacheEpoch.current();
-        if (!Objects.equals(town, tropimonChatFilter$measuredTown) || fontEpoch != tropimonChatFilter$fontEpoch) {
+        int otherTabs = mainTabsTotalWidth() - townButtonWidth();
+        int townLimit = Math.max(TOWN_MIN_WIDTH,
+                Math.min(TOWN_MAX_WIDTH, filterButtonX() - BUTTON_GAP - otherTabs - 64));
+        if (!Objects.equals(town, tropimonChatFilter$measuredTown) || fontEpoch != tropimonChatFilter$fontEpoch
+                || townLimit != tropimonChatFilter$townWidthLimit) {
+            tropimonChatFilter$townWidthLimit = townLimit;
             tropimonChatFilter$measuredTown = town;
             tropimonChatFilter$fontEpoch = fontEpoch;
             tropimonChatFilter$townWidth = town == null || town.isBlank() ? TOWN_MIN_WIDTH
-                    : Math.max(TOWN_MIN_WIDTH, Math.min(TOWN_MAX_WIDTH, textRenderer.getWidth(town) + 10));
+                    : Math.max(TOWN_MIN_WIDTH, Math.min(townLimit, textRenderer.getWidth(town) + 10));
             tropimonChatFilter$townLabel = town == null ? null
                     : Text.literal(textRenderer.trimToWidth(town, tropimonChatFilter$townWidth - 6));
         }
@@ -1148,9 +1161,12 @@ abstract class ChatScreenMixin extends Screen {
 
     private int calculateChatRight() {
         double chatScale = client.inGameHud.getChatHud().getChatScale();
+        // Leave one usable private-conversation tab, even with staff/group tabs and narrow chat.
+        int minimum = mainTabsTotalWidth() - townButtonWidth() + TOWN_MIN_WIDTH
+                + BUTTON_GAP + FILTER_BUTTON_WIDTH + 64;
         return Math.min(width,
-                4 + (int) Math.ceil(client.inGameHud.getChatHud().getWidth() * chatScale)
-                        + TAB_RIGHT_OFFSET);
+                Math.max(minimum, 4 + (int) Math.ceil(client.inGameHud.getChatHud().getWidth() * chatScale)
+                        + TAB_RIGHT_OFFSET));
     }
 
     private int filterButtonX() {
@@ -1163,7 +1179,8 @@ abstract class ChatScreenMixin extends Screen {
 
     private int filterPanelY() {
         int above = tabY() - filterPanelHeight() - 4;
-        return above >= 3 ? above : tabY() + BUTTON_HEIGHT + 4;
+        int preferred = above >= 3 ? above : tabY() + BUTTON_HEIGHT + 4;
+        return Math.clamp(preferred, 3, Math.max(3, height - filterPanelHeight() - 3));
     }
 
     private int filterPanelWidth() {

@@ -48,7 +48,7 @@ public final class ConversationLayoutCache {
         int remaining = currentTabs.size() - offset;
         int desired = Math.min(3, remaining);
         int available = mainLeft - minLeft - 1;
-        int widthCap = 106;
+        int widthCap = Math.max(58, Math.min(106, available));
         if (desired == 3 && available >= desired * 58 + desired - 1) {
             widthCap = Math.min(widthCap, (available - desired + 1) / desired);
         }
