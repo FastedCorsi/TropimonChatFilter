@@ -102,9 +102,12 @@ val prepareChatFilterDelivery by tasks.registering {
             rename { "tropimon-chat-filter-$expandedModVersion-LOCAL.jar" }
         }
         copy {
-            from("tools/InstallWhenClosed.ps1", "tools/ArmLocalUpdate.ps1")
+            from("tools/install-local-deferred.ps1", "tools/InstallManagedLocalMod.ps1")
             into(root.resolve("local"))
         }
+        val localJar = root.resolve("local/tropimon-chat-filter-$expandedModVersion-LOCAL.jar")
+        val hash = MessageDigest.getInstance("SHA-256").digest(localJar.readBytes()).joinToString("") { "%02x".format(it) }
+        localJar.resolveSibling(localJar.name + ".sha256").writeText(hash + "\n")
     }
 }
 val verifyChatFilterDelivery by tasks.registering(JavaExec::class) {
@@ -119,8 +122,8 @@ val verifyChatFilterDelivery by tasks.registering(JavaExec::class) {
         check(shared.readBytes().contentEquals(local.readBytes())) { "Delivery JARs differ." }
         setArgs(listOf("artifacts", layout.projectDirectory.asFile.absolutePath,
                 shared.absolutePath, local.absolutePath,
-                root.resolve("local/InstallWhenClosed.ps1").absolutePath,
-                root.resolve("local/ArmLocalUpdate.ps1").absolutePath))
+                root.resolve("local/install-local-deferred.ps1").absolutePath,
+                root.resolve("local/InstallManagedLocalMod.ps1").absolutePath))
     }
 }
 tasks.build { finalizedBy(verifyChatFilterDelivery) }
@@ -287,6 +290,8 @@ val prepareReleaseDelivery = tasks.register("prepareReleaseDelivery") {
         copyAndHash(localDirectory.resolve("TropimonChatFilter-${project.version}+1.21.1-LOCAL.jar"))
         file("tools/install-local-deferred.ps1")
             .copyTo(localDirectory.resolve("install-local-deferred.ps1"), overwrite = true)
+        file("tools/InstallManagedLocalMod.ps1")
+            .copyTo(localDirectory.resolve("InstallManagedLocalMod.ps1"), overwrite = true)
     }
 }
 
