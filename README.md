@@ -34,13 +34,22 @@ Le JAR généré se trouve dans `TropimonChatFilter/build/libs`.
 
 ## Confidentialité et distribution
 
-Chaque build prépare deux exemplaires identiques de la version courante dans
-`build/delivery/<version>/share/` et `build/delivery/<version>/local/`.
-Le premier est prêt à partager ; le second contient aussi `InstallWhenClosed.ps1` et
-`ArmLocalUpdate.ps1`, deux outils externes absents du JAR public. Le build vérifie les deux JAR et
-ces scripts. L'outil d'armement lance un unique processus masqué qui attend la fermeture de Minecraft,
-installe, vérifie la copie puis s'arrête ; le launcher peut rester ouvert. L'ancien JAR est sauvegardé
-hors des mods chargés. Ne jamais charger les deux exemplaires ensemble.
+Les évolutions de Chat Filter sont intégrées au nouveau **Tropimon Compagnion**, qui constitue le
+seul JAR distribué aux joueurs pour cette fonctionnalité. Le projet autonome reste la source de
+développement et de validation : ses artefacts locaux servent aux contrôles internes et ne doivent
+pas être publiés ou installés comme une nouvelle version individuelle.
+
+Le JAR ne contient aucun vérificateur réseau, téléchargement, commande de mise à jour, popup
+d'installation ni helper de remplacement. Les anciens dépôts, releases, configurations et
+sauvegardes restent conservés. Les outils privés présents dans `tools/` demeurent externes au JAR
+et ne sont utilisés que dans un workflow local explicitement autorisé.
+
+## Changement 0.1.45
+
+L'ancien auto-updater GitHub a été entièrement retiré : vérification planifiée, commande, popup,
+téléchargement, installateur différé et code exclusif associé. Chat Filter n'effectue désormais
+aucune requête réseau de mise à jour et ne remplace aucun JAR. La distribution des prochaines
+évolutions et l'éventuelle notification Modrinth appartiennent au package Tropimon Compagnion.
 
 ## Changement 0.1.38
 
@@ -282,19 +291,6 @@ Ce paramètre charge leurs JAR en lecture seule dans `build/production-smoke-coe
 dépendances de compilation ou ressources du JAR distribué. Le JAR Chat Filter déjà installé est exclu
 de ce chargement. Les configurations de test restent dans ces répertoires séparés.
 
-Pour le copier directement dans l'instance Tropimon locale, après avoir fermé le jeu :
-
-```powershell
-.\gradlew.bat -p .\TropimonChatFilter installTropimonChatFilterLocal
-```
-
-
-## Mises à jour avec consentement
-
-Aucun téléchargement de mise à jour sans accord. Le premier écran propose uniquement d'autoriser la consultation des métadonnées GitHub (au démarrage, au plus toutes les six heures). Une seconde confirmation montre la version et demande explicitement le téléchargement du JAR et de son SHA-256. L'ancien réglage `enabled: true` ne donne aucune autorisation.
-
-Après accord et vérification, un installateur local utilise le Java de Minecraft, attend la fermeture du jeu, sauvegarde l'ancien JAR hors des mods chargés et remplace uniquement ce mod. Aucun autre mod Tropimon ni changement de launcher n'est requis. Le dossier `mods` classique et le stockage géré Tropimon reconnu sont pris en charge ; une disposition inconnue, un fichier modifié/verrouillé ou une incompatibilité bloque l'installation sans forcer. Le nom du JAR installé est conservé pour rester enregistré par le launcher ; la version réelle se lit dans les métadonnées Fabric.
-
-Pour modifier le choix en jeu : `/tropimonupdates tropimon_chat_filter`. Refuser laisse le mod utilisable. Les anciennes versions dont l'updater est défectueux nécessitent un premier remplacement manuel, jeu fermé. L'accord donné pour ce mod ne s'applique pas aux autres mods. Les tests automatisés sont exécutés sous Windows ; les autres systèmes doivent encore être validés en situation réelle.
-
-Les versions à consentement utilisent un canal de releases distinct du lien GitHub « latest » historique : sélectionner la version par son tag. Cela évite de déclencher les anciens updaters sans accord.
+Les essais automatisés restent complémentaires. Un essai manuel autorisé doit passer par le launcher
+Tropimon, puis **Jouer → Solo → monde de test**, avec la version intégrée réellement installée. Le
+solo ne valide pas les fonctions dépendantes du serveur Tropimon.

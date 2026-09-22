@@ -18,7 +18,6 @@ public final class TropimonChatFilterClient implements ClientModInitializer {
 
     @Override
     public void onInitializeClient() {
-        TropimonSelfUpdater.start(LOGGER);
         HudRenderCallback.EVENT.register((context, tickCounter) -> {
             if (MinecraftClient.getInstance().currentScreen == null) {
                 TeleportPopupRenderer.render(context);
